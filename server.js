@@ -5,6 +5,17 @@ const bodyParser = require('body-parser')
 app.use(bodyParser.urlencoded({extended : true}))
 app.use('/public', express.static('public'))
 
+const methodOverride = require('method-override')
+app.use(methodOverride('_method'))
+
+const passport = require('passport')
+const LocalStrategy = require('passport-local')
+const session = require('express-session')
+
+app.use(session({ secret : 'secret code', resave : true, saveUninitialized: false}))
+app.use(passport.initialize())
+app.use(passport.session())
+
 var db
 const MongoClient = require('mongodb').MongoClient
 
@@ -30,7 +41,8 @@ app.get('/', (req, res) => {
 })
 
 app.get('/write', (req, res) => {
-    res.sendFile(__dirname + '/write.html')
+    // res.sendFile(__dirname + '/write.ejs')
+    res.render('write.ejs')
 })
 
 app.post('/add', (req, res) => {
@@ -54,6 +66,14 @@ app.get('/list', (req, res) => {
     
 })
 
+app.get('/edit/:id', (req, res) => {
+
+    db.collection('post').findOne({_id: parseInt(req.params.id)}, (error, result) => {
+        console.log(result)
+        res.render('edit.ejs', { post : result })
+    })
+})
+
 app.delete('/delete', (req, res) => {
 
     req.body._id = parseInt(req.body._id)
@@ -67,5 +87,65 @@ app.delete('/delete', (req, res) => {
 app.get('/detail/:id', (req, res) => {
     db.collection('post').findOne({_id: parseInt(req.params.id)}, (error, result) => {
         res.render('detail.ejs', { data : result})
+    })
+})
+
+app.put('/edit', (req, res) => {
+    db.collection('post').updateOne({ _id : parseInt(req.body.id) }, { $set : { title: req.body.title, date: req.body.date} }, (error, result) => {
+        console.log('update clear')
+        res.redirect('/list')
+    })
+})
+
+app.get('/login', (req, res) => {
+    res.render('login.ejs')
+})
+
+app.post('/login', passport.authenticate('local', {
+    failureRedirect : '/fail'
+}), (req, res) => {
+    res.redirect('/')
+})
+
+app.get('/profile', loginCheck, (req, res) => {
+    console.log(req.user)
+    res.render('profile.ejs', { user: req.user})
+})
+
+function loginCheck(req, res, next) {
+    if(req.user){
+        next()
+    } else {
+        res.send('should be login')
+    }
+}
+
+passport.use(new LocalStrategy({
+    usernameField: 'id',
+    passwordField: 'pw',
+    session: true,
+    passReqToCallback: false,
+  }, function (입력한아이디, 입력한비번, done) {
+    //console.log(입력한아이디, 입력한비번);
+    db.collection('login').findOne({ id: 입력한아이디 }, function (에러, 결과) {
+      if (에러) return done(에러)
+  
+      if (!결과) return done(null, false, { message: '존재하지않는 아이디요' })
+      if (입력한비번 == 결과.pw) {
+        return done(null, 결과)
+      } else {
+        return done(null, false, { message: '비번틀렸어요' })
+      }
+    })
+  }))
+
+passport.serializeUser((user, done) => {
+    done(null, user.id)
+})
+
+passport.deserializeUser((username, done) => {
+
+    db.collection('login').findOne({id : username}, (error, result) => {
+        done(null, result)
     })
 })
