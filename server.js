@@ -49,7 +49,8 @@ app.post('/add', (req, res) => {
     res.send('get message')
     db.collection('counter').findOne({name: 'postCount'}, (error, result) => {
         var totalPost = result.totalPost
-        db.collection('post').insertOne({ _id: totalPost + 1, title: req.body.title, date: req.body.date}, () => {
+        var postContents = { _id: totalPost + 1, title: req.body.title, date: req.body.date, author: req.user._id}
+        db.collection('post').insertOne(postContents, () => {
             db.collection('counter').updateOne({name: 'postCount'}, { $inc: {totalPost: 1}}, (error, result) => {
                 if(error) return console.log(error)
             })
@@ -77,7 +78,9 @@ app.get('/edit/:id', (req, res) => {
 app.delete('/delete', (req, res) => {
 
     req.body._id = parseInt(req.body._id)
-    db.collection('post').deleteOne(req.body, (error, result) => {
+
+    var deleteContent = { _id: req.body._id, author: req.user._id }
+    db.collection('post').deleteOne(deleteContent, (error, result) => {
         if(error) return console.log(error)
 
         res.status(200).send({message: 'success'})
@@ -147,5 +150,19 @@ passport.deserializeUser((username, done) => {
 
     db.collection('login').findOne({id : username}, (error, result) => {
         done(null, result)
+    })
+})
+
+app.get('/search', (req, res) => {
+
+    db.collection('post').find({ $text: { $search: req.query.value } }).toArray((error, result) => {
+        console.log(result)
+        res.render('search.ejs', { posts : result })
+    })
+})
+
+app.post('/register', (req, res) => {
+    db.collection('login').insertOne({ id : req.body.id, pw : req.body.pw }, (error, result) => {
+        res.redirect('/')
     })
 })
