@@ -15,6 +15,8 @@ const session = require('express-session')
 app.use(session({ secret : 'secret code', resave : true, saveUninitialized: false}))
 app.use(passport.initialize())
 app.use(passport.session())
+app.use('/shop', require('./routes/shop.js'))
+app.use('/board/sub', require('./routes/board.js'))
 
 var db
 const MongoClient = require('mongodb').MongoClient
@@ -166,3 +168,4 @@ app.post('/register', (req, res) => {
         res.redirect('/')
     })
 })
+
