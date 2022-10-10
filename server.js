@@ -18,6 +18,18 @@ app.use(passport.session())
 app.use('/shop', require('./routes/shop.js'))
 app.use('/board/sub', require('./routes/board.js'))
 
+let multer = require('multer')
+var storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, './public/image')
+    },
+    filename : (req, file, cb) => {
+        cb(null, file.originalname)
+    }
+})
+
+var upload = multer({ storage : storage })
+
 var db
 const MongoClient = require('mongodb').MongoClient
 
@@ -169,3 +181,14 @@ app.post('/register', (req, res) => {
     })
 })
 
+app.get('/upload', (req, res) => {
+    res.render('upload.ejs')
+})
+
+app.post('/upload', upload.single('profile'), (req, res) => {
+    res.send('upload complete')
+})
+
+app.get('/image/:imageName', (req, res) => {
+    res.sendFile( __dirname + '/public/image/' + req.params.imageName )
+})
