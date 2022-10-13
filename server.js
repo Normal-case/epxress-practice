@@ -18,6 +18,8 @@ app.use(passport.session())
 app.use('/shop', require('./routes/shop.js'))
 app.use('/board/sub', require('./routes/board.js'))
 
+const { ObjectId } = require('mongodb')
+
 let multer = require('multer')
 var storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -191,4 +193,66 @@ app.post('/upload', upload.single('profile'), (req, res) => {
 
 app.get('/image/:imageName', (req, res) => {
     res.sendFile( __dirname + '/public/image/' + req.params.imageName )
+})
+
+app.post('/chatroom', loginCheck, (req, res) => {
+
+    var saveData = {
+        title: 'chat room',
+        member: [ObjectId(req.body.authorId), req.user._id],
+        date: new Date()
+    }
+
+    db.collection('chatroom').insertOne(saveData).then((result) => {
+        res.send('success')
+    })
+})
+
+app.get('/chat', loginCheck, (req, res) => {
+
+    db.collection('chatroom').find( { member: req.user._id }).toArray().then((result) => {
+        res.render('chat.ejs', { data : result})
+    })
+    
+})
+
+app.post('/message', loginCheck, (req, res) => {
+
+    var saveData = {
+        parent: req.body.parent,
+        content: req.body.content,
+        userid: req.user._id,
+        data: new Date()
+    }
+
+    db.collection('message').insertOne(saveData).then(() => {
+        console.log('db save success')
+        res.send('db save success')
+    })
+})
+
+
+app.get('/message/:id', loginCheck, (req, res) => {
+
+    res.writeHead(200, {
+        "Connection": "keep-alive",
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+    });
+
+    db.collection('message').find({ parent : req.params.id }).toArray().then((result) => {
+        res.write('event: test\n')
+        res.write('data: ' + JSON.stringify(result) + '\n\n')
+    })
+
+    const pipeline = [
+        { $match: { 'fullDocument.parent' : req.params.id } }
+    ]
+    const collection = db.collection('message')
+    const changeStream = collection.watch(pipeline)
+    changeStream.on('change', (result) => {
+        res.write('event: test\n')
+        res.write('data: ' + JSON.stringify([result.fullDocument]) + '\n\n')
+    })
+    
 })

@@ -35,13 +35,20 @@
               <h4>todo title: <%= posts[i].title %></h4>
               <p>todo date: <%= posts[i].date %></p>
               <button class="btn btn-danger delete" data-id="<%= posts[i]._id %>">삭제</button>
-              <button class="btn btn-danger delete" data-id="<%= posts[i]._id %>">채팅</button>
+              <button class="btn btn-secondary chat" data-id="<%= posts[i].author %>">채팅</button>
             </li>
           <% } %>
         </ul>
       </div>
 
       <script>
+
+        $('.chat').click((e) => {
+          var id = e.target.dataset.id
+          $.post('/chatroom', { authorId: id }).then(() => {
+            console.log('success')
+          })
+        })
 
         $('.delete').click((e) => {
             var idx = e.target.dataset.id

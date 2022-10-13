@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bootstrap demo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-iYQeCzEYFbKjA/T2uDLTpkwGzCiq6soy8tYaI1GyVh/UjpbCx/TYkiZhlZB6+fzT" crossorigin="anonymous">
+
+    <link rel="stylesheet" href="/public/main.css">
+  </head>
+  <body>
+
+      <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    
+      <%- include('nav.html') %>
+      
+      <h4 class="ml-2 my-3 text-center">Chat Room</h4>
+
+      <div class="container p-4 detail">
+        
+        <div class="row">
+            <div class="col-3">
+                <ul class="list-group chat-list">
+                    <% for (let i = 0; i < data.length; i++){ %>
+                    <li class="list-group-item" data-code="<%= data[i]._id %>">
+                        <h6><%= data[i].title %></h6>
+                        <h6 class="text-small"><%= data[i].member[0] %></h6>
+                    </li>
+                    <% } %>
+                </ul>
+            </div>
+            
+            <div class="col-9 p-0">
+                <div class="chat-room">
+                    <ul class="list-group chat-content">
+                        <li><span class="chat-box">contents</span></li>
+                        <li><span class="chat-box">contents</span></li>
+                        <li><span class="chat-box mine">contents</span></li>
+                    </ul>
+                    <div class="input-group">
+                        <input class="form-control" id="chat-input">
+                        <button class="btn btn-secondary" id="send">send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div>
+
+      <script>
+        var inputChatId;
+        var eventSource;
+        $('.list-group-item').click(() => {
+            inputChatId = document.querySelector('.list-group-item').dataset.code
+
+            $('.chat-content').html('')
+
+            if(eventSource != undefined) {
+                eventSource.close()
+            }
+
+            eventSource = new EventSource('/message/' + inputChatId)
+            eventSource.addEventListener('test', (e) => {
+                console.log(JSON.parse(e.data))
+
+                var chatContent = JSON.parse(e.data)
+                chatContent.forEach((i) => {
+                    $('.chat-content').append('<li><span class="chat-box">' + i.content + '</span></li>')
+                })
+            })
+        })
+
+        $('#send').click(() => {
+            var chatContent = $('#chat-input').val()
+            var sendData = {
+                parent: inputChatId,
+                content: chatContent,
+            }
+            $.post('/message', sendData).then(() => {
+                console.log('send success')
+            })
+        })
+      </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-u1OknCvxWvY5kfmNBILK2hRnQC3Pr17a+RTT6rIHI7NnikvbZlHgTPOOmMi466C8" crossorigin="anonymous"></script>
+  </body>
+</html>
