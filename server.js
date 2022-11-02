@@ -144,16 +144,16 @@ passport.use(new LocalStrategy({
     passwordField: 'pw',
     session: true,
     passReqToCallback: false,
-  }, function (입력한아이디, 입력한비번, done) {
-    //console.log(입력한아이디, 입력한비번);
-    db.collection('login').findOne({ id: 입력한아이디 }, function (에러, 결과) {
-      if (에러) return done(에러)
+  }, function (inputId, inputPassword, done) {
+    //console.log(inputId, inputPassword);
+    db.collection('login').findOne({ id: inputId }, function (error, result) {
+      if (error) return done(error)
   
-      if (!결과) return done(null, false, { message: '존재하지않는 아이디요' })
-      if (입력한비번 == 결과.pw) {
-        return done(null, 결과)
+      if (!result) return done(null, false, { message: 'Invalid ID' })
+      if (inputPassword == result.pw) {
+        return done(null, result)
       } else {
-        return done(null, false, { message: '비번틀렸어요' })
+        return done(null, false, { message: 'Invalid Password' })
       }
     })
   }))
